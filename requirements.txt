@@ -1,0 +1,3 @@
+# Provider layer + runners. Pinned loosely; the provider seam isolates these.
+replicate>=1.0.0
+Pillow>=10.0.0
