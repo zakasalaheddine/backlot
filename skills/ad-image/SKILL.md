@@ -30,12 +30,19 @@ a fake product.
 
 ### 1. Grill for the brief
 Follow `interview.md`: which product + character, the angle/hook, character-led vs
-product-hero, formats, copy (draft options if the user wants), and how many variants
-+ what differs between them so the A/B is informative. Confirm before generating.
+product-hero, formats, and how many variants + what differs between them so the A/B
+is informative. Confirm before generating.
+
+**Copy is optional.** The default deliverable is the clean composited keyframe. Only
+grill for headline/subhead/CTA if the user actually wants burned-on copy — then add
+an `overlay` block (below). If they don't, omit `overlay` entirely and the keyframe
+is the final asset.
 
 ### 2. Emit the ad job JSON (you are the planner)
-Compose the job in-context and write it to a file (e.g. `out/<name>/job.json`). Copy
-comes from you — headline/subhead/CTA as clean strings. Schema:
+Compose the job in-context and write it to a file (e.g. `out/<name>/job.json`). The
+`overlay` (and its `anchor`) is **optional** — include it only for burned-on copy;
+omit it for a clean keyframe deliverable. When present, copy comes from you —
+headline/subhead/CTA as clean strings. Schema:
 
 ```json
 {
@@ -73,20 +80,24 @@ Notes:
 - For **product-hero** (no character), put only the product ID in `use_refs` and
   prompt for a clean studio set.
 - For A/B: multiple `variants`, changing ONE thing (hook or scene, not both).
-- `anchor` is `top` or `bottom` — pick per `ad-layout.md` safe zones.
+- `overlay` + `anchor` are optional. Omit both for a clean keyframe (no text). When
+  included, `anchor` is `top` or `bottom` — pick per `ad-layout.md` safe zones.
 
 ### 3. Run it
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/scripts/run_ad.py out/<name>/job.json
 ```
-This composites each variant × format (Nano-Banana), burns the copy layer
-(`text_overlay.py`), and writes `ad_<format>.png` files plus a `run_manifest.json`.
-Keyframes are content-addressed, so re-running after a copy tweak only re-burns text
-— it won't pay to regenerate the image.
+This composites each variant × format (Nano-Banana), burns the copy layer only for
+variants that have an `overlay` (`text_overlay.py`), and writes a `run_manifest.json`.
+Each output's `ad` points to the copy-burned `ad_<format>.png` when there's an
+overlay, or to the clean `keyframe_<format>.png` when there isn't. Keyframes are
+content-addressed, so re-running after a copy tweak only re-burns text — it won't pay
+to regenerate the image.
 
 ### 4. Review & iterate
-Show the user the `ad_*.png` outputs. Iterate on copy (cheap — cached keyframe) or on
-the scene (regenerates). To force a fresh keyframe, add `--force`.
+Show the user the produced outputs (`ad`/`keyframe` paths from the manifest). Iterate
+on copy (cheap — cached keyframe) or on the scene (regenerates). To force a fresh
+keyframe, add `--force`.
 
 ## Testing without spending
 `BACKLOT_IMAGE_PROVIDER=stub python ${CLAUDE_PLUGIN_ROOT}/scripts/run_ad.py out/<name>/job.json` runs the
