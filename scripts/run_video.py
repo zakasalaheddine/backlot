@@ -26,10 +26,10 @@ sys.path.insert(0, str(REPO))
 from providers import video  # noqa: E402
 
 
-def _clip_hash(frame: Path, motion: str, duration: int, resolution: str,
-               camera_fixed: bool) -> str:
+def _clip_hash(frame: Path, motion: str, negative: str, duration: int, resolution: str,
+               seed, camera_fixed: bool) -> str:
     h = hashlib.sha256()
-    for part in (motion, str(duration), resolution, str(camera_fixed)):
+    for part in (motion, negative, str(duration), resolution, str(seed), str(camera_fixed)):
         h.update(part.encode())
         h.update(b"\x00")
     h.update(hashlib.sha256(frame.read_bytes()).digest())
@@ -67,12 +67,19 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
         negative = clip.get("negative", "")
         seed = clip.get("seed")
 
+        if resolution not in {"480p", "720p", "1080p"}:
+            raise ValueError(
+                f"clip {cid!r}: resolution must be one of 480p/720p/1080p, got {resolution!r}"
+            )
+        if duration not in {5, 10}:
+            raise ValueError(f"clip {cid!r}: duration must be 5 or 10, got {duration!r}")
+
         cdir = out_dir / cid
         cdir.mkdir(parents=True, exist_ok=True)
         clip_path = cdir / "clip.mp4"
         hash_path = cdir / "clip.hash"
 
-        want = _clip_hash(frame, motion, duration, resolution, camera_fixed)
+        want = _clip_hash(frame, motion, negative, duration, resolution, seed, camera_fixed)
         have = hash_path.read_text().strip() if hash_path.exists() else ""
 
         if force or not clip_path.exists() or have != want:

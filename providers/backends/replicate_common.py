@@ -1,6 +1,6 @@
 """Shared Replicate plumbing: run a model and save its output image(s) to disk.
 
-Isolated here so both the image and (future) video backends share one code path
+Isolated here so both the image and video backends share one code path
 for auth, invocation, and downloading FileOutput/URL results.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ def _client():
 
 
 def _save_output(output, out_path: Path) -> Path:
-    """Persist one Replicate image output to out_path.
+    """Persist one Replicate media output to out_path.
 
     Replicate returns either a FileOutput object (has .read()/.url) or a plain
     URL string, depending on client version — handle both.
