@@ -1,6 +1,6 @@
 ---
 name: backlot
-description: UGC content engine — build reusable characters, static ad images, and (soon) image-to-video UGC reels from one continuity-locked asset library, using Nano-Banana for images behind a swappable provider layer. Use this as the entry point whenever the user wants to run an end-to-end UGC/ad workflow, build "a set of ads", set up a content engine or ad campaign for a brand, isn't sure which step they need, or asks what backlot can do. Routes to the right sub-skill (character-creator, ad-image, ugc-video) and enforces that ads/videos only ever reference assets that already exist.
+description: UGC content engine — build reusable characters, static ad images, and image-to-video UGC reels from one continuity-locked asset library, using Nano-Banana for images behind a swappable provider layer. Use this as the entry point whenever the user wants to run an end-to-end UGC/ad workflow, build "a set of ads", set up a content engine or ad campaign for a brand, isn't sure which step they need, or asks what backlot can do. Routes to the right sub-skill (character-creator, ad-image, ugc-video) and enforces that ads/videos only ever reference assets that already exist.
 ---
 
 # backlot — router
@@ -15,7 +15,7 @@ compositing those assets into a new scene. That reference-locking is the whole t
                  │ referenced by ID
      ┌───────────┼───────────┐
      ▼           ▼           ▼
-character-creator  ad-image   ugc-video (v1)
+character-creator  ad-image   ugc-video
 (produces assets) (static ads)(image→video)
 ```
 
@@ -25,7 +25,7 @@ character-creator  ad-image   ugc-video (v1)
 |---|---|
 | create a character / creator / persona / avatar / spokesperson; register a real product; evolve a character's look | **character-creator** |
 | make an ad image, product ad, static/feed/carousel creative, a set of test variants, "a set of ads" | **ad-image** |
-| make a UGC video, reel, video ad, animate an image | **ugc-video** *(v1 — not built yet; tell the user it's coming and offer ads instead)* |
+| make a UGC video, reel, video ad, animate an image | **ugc-video** *(animates an existing keyframe)* |
 
 Invoke the matching sub-skill (they trigger on their own descriptions too; this
 router is for multi-step campaigns or when the user is unsure).
