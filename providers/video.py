@@ -1,21 +1,47 @@
-"""Public video API — v1, not built yet.
+"""Public video API. Callers use ONLY these functions; the backend is chosen
+from env (config.VIDEO_PROVIDER). To add a host, drop a module in backends/
+with the same image_to_video() signature and register it in _backend().
 
-The seam is defined so ugc-video can be dropped in without touching skills.
-When you build it:
-  1. Verify the Seedance slug + input schema on Replicate (start-frame image,
-     motion prompt, duration, aspect) — do NOT guess it; the schema is where
-     scripted integrations break.
-  2. Add providers/backends/replicate_video.py implementing image_to_video().
-  3. Register it below, mirroring images.py.
+v1: image-to-video from a locked keyframe via Seedance. Mirrors images.py.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
+from . import config
 
-def image_to_video(frame: str | Path, motion: dict, duration_s: int = 6,
+
+def _backend():
+    name = config.VIDEO_PROVIDER
+    if name == "replicate":
+        from .backends import replicate_video as b
+    elif name == "stub":
+        from .backends import stub_video as b
+    else:
+        raise ValueError(
+            f"Unknown BACKLOT_VIDEO_PROVIDER={name!r}. Known: replicate, stub."
+        )
+    return b
+
+
+def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
+                   resolution: str = "1080p",
                    out_path: str | Path = "out/clip.mp4") -> Path:
-    raise NotImplementedError(
-        "ugc-video is v1. Implement providers/backends/replicate_video.py against "
-        "the verified Seedance schema, then register it here."
+    """Animate a single locked keyframe into a short clip.
+
+    frame: path to the start-frame image (an existing composited keyframe).
+    motion: {"prompt": str (required), "negative": str (optional),
+             "seed": int (optional), "camera_fixed": bool (optional)}.
+    Returns the saved .mp4 path.
+    """
+    b = _backend()
+    return b.image_to_video(
+        Path(frame),
+        motion["prompt"],
+        motion.get("negative", ""),
+        duration,
+        resolution,
+        motion.get("seed"),
+        motion.get("camera_fixed", False),
+        Path(out_path),
     )
