@@ -35,13 +35,23 @@ def _save_output(output, out_path: Path) -> Path:
     return out_path
 
 
-def run_image(model: str, input_dict: dict, out_path: Path) -> Path:
-    """Run a single-image model and save the first output to out_path."""
+def _run_and_save(model: str, input_dict: dict, out_path: Path) -> Path:
+    """Run a Replicate model and save its single output to out_path."""
     replicate = _client()
     output = replicate.run(model, input=input_dict)
-    # Some models return a list even for a single image.
+    # Some models return a list even for a single output.
     if isinstance(output, (list, tuple)):
         if not output:
             raise RuntimeError(f"{model} returned no output")
         output = output[0]
     return _save_output(output, out_path)
+
+
+def run_image(model: str, input_dict: dict, out_path: Path) -> Path:
+    """Run a single-image model and save the first output to out_path."""
+    return _run_and_save(model, input_dict, out_path)
+
+
+def run_video(model: str, input_dict: dict, out_path: Path) -> Path:
+    """Run a video model and save its single output (.mp4) to out_path."""
+    return _run_and_save(model, input_dict, out_path)
