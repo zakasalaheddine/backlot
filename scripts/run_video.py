@@ -31,7 +31,7 @@ import presets as preset_lib  # noqa: E402
 
 def _compose(clip: dict, preset_map: dict):
     """Resolve a clip's camera/action presets + free-text motion into the final
-    Seedance inputs. Returns (motion, negative, duration, resolution, seed, camera_fixed)."""
+    Seedance inputs. Returns (motion, negative, duration, resolution, seed, camera_fixed, audio)."""
     cid = clip["id"]
     try:
         cam = preset_lib.resolve(clip["camera"], "camera", preset_map) if clip.get("camera") else None
@@ -71,13 +71,15 @@ def _compose(clip: dict, preset_map: dict):
 
     resolution = clip.get("resolution", "1080p")
     seed = clip.get("seed")
-    return motion, negative, duration, resolution, seed, camera_fixed
+    audio = bool(clip.get("audio", False))
+    return motion, negative, duration, resolution, seed, camera_fixed, audio
 
 
 def _clip_hash(frame: Path, motion: str, negative: str, duration: int, resolution: str,
-               seed, camera_fixed: bool) -> str:
+               seed, camera_fixed: bool, audio: bool) -> str:
     h = hashlib.sha256()
-    for part in (motion, negative, str(duration), resolution, str(seed), str(camera_fixed)):
+    for part in (motion, negative, str(duration), resolution, str(seed),
+                 str(camera_fixed), str(audio)):
         h.update(part.encode())
         h.update(b"\x00")
     h.update(hashlib.sha256(frame.read_bytes()).digest())
@@ -97,6 +99,7 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
     meta = job.get("meta", {})
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    caps = video.capabilities()
     preset_map = preset_lib.load_presets()
     produced = []
     for clip in job["clips"]:
@@ -107,29 +110,35 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
                 f"clip {cid!r}: start frame not found: {clip['frame']}"
             )
 
-        motion, negative, duration, resolution, seed, camera_fixed = _compose(
+        motion, negative, duration, resolution, seed, camera_fixed, audio = _compose(
             clip, preset_map)
 
-        if resolution not in {"480p", "720p", "1080p"}:
+        if resolution not in caps["resolutions"]:
             raise ValueError(
-                f"clip {cid!r}: resolution must be one of 480p/720p/1080p, got {resolution!r}"
+                f"clip {cid!r}: resolution {resolution!r} not supported by the active "
+                f"model; choose one of {sorted(caps['resolutions'])}"
             )
         if duration not in {5, 10}:
             raise ValueError(f"clip {cid!r}: duration must be 5 or 10, got {duration!r}")
+        if audio and not caps["audio"]:
+            raise ValueError(
+                f"clip {cid!r}: audio requested but the active model has no audio support"
+            )
 
         cdir = out_dir / cid
         cdir.mkdir(parents=True, exist_ok=True)
         clip_path = cdir / "clip.mp4"
         hash_path = cdir / "clip.hash"
 
-        want = _clip_hash(frame, motion, negative, duration, resolution, seed, camera_fixed)
+        want = _clip_hash(frame, motion, negative, duration, resolution, seed,
+                          camera_fixed, audio)
         have = hash_path.read_text().strip() if hash_path.exists() else ""
 
         if force or not clip_path.exists() or have != want:
             video.image_to_video(
                 frame,
                 {"prompt": motion, "negative": negative, "seed": seed,
-                 "camera_fixed": camera_fixed},
+                 "camera_fixed": camera_fixed, "audio": audio},
                 duration=duration, resolution=resolution, out_path=clip_path,
             )
             hash_path.write_text(want)
