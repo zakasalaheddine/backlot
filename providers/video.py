@@ -31,7 +31,8 @@ def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
 
     frame: path to the start-frame image (an existing composited keyframe).
     motion: {"prompt": str (required), "negative": str (optional),
-             "seed": int (optional), "camera_fixed": bool (optional)}.
+             "seed": int (optional), "camera_fixed": bool (optional),
+             "audio": bool (optional, default False)}.
     Returns the saved .mp4 path.
     """
     b = _backend()
@@ -43,5 +44,13 @@ def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
         resolution,
         motion.get("seed"),
         motion.get("camera_fixed", False),
+        motion.get("audio", False),
         Path(out_path),
     )
+
+
+def capabilities() -> dict:
+    """Capability profile of the active Seedance model (from BACKLOT_SEEDANCE_MODEL).
+    Lets callers introspect supported resolutions / audio without backend details."""
+    from .backends.seedance_profiles import profile_for
+    return profile_for(config.SEEDANCE_MODEL)

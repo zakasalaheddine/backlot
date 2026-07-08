@@ -17,7 +17,7 @@ _PLACEHOLDER_MP4 = bytes.fromhex(
 
 
 def image_to_video(frame: Path, prompt: str, negative: str, duration: int,
-                   resolution: str, seed, camera_fixed: bool,
+                   resolution: str, seed, camera_fixed: bool, audio: bool,
                    out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(_PLACEHOLDER_MP4)
