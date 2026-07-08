@@ -25,13 +25,19 @@ Check what keyframes exist, e.g.:
 ls out/*/*/keyframe_*.png
 ```
 
+List the motion presets before authoring a clip, and warn the user before using
+any preset whose `status` is `experimental` (unverified on Seedance):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/presets.py list
+```
+
 ## Flow
 
 ### 1. Grill for the motion brief
-Follow `interview.md`, kept short: which keyframe, what single motion beat, duration
-(5s default, 10s only if needed), and whether the camera should be fixed. The motion
-prompt is drafted by you (the planner) from the keyframe's concept — like ad copy —
-then confirmed. See `seedance-motion.md`.
+Pick a **camera move** and/or a **subject action** from the preset library
+(`presets.py list`), plus duration (5s default, 10s only if needed). Free-text
+`motion` is optional, for fine-tuning on top of the presets. Warn before using an
+`experimental` preset. You (the planner) still confirm the brief before rendering.
 
 ### 2. Emit the video job JSON (you are the planner)
 Write it to `out/<name>/job.json`:
@@ -42,13 +48,12 @@ Write it to `out/<name>/job.json`:
   "clips": [
     {
       "id": "c1",
-      "concept": "mirror selfie comes alive — subtle sway + phone tilt",
+      "concept": "crash zoom onto the tee while she shows it off",
       "frame": "out/job/v1/keyframe_9x16.png",
-      "motion": "she sways slightly and tilts the phone, hair moves naturally, gentle breathing, subtle smile shift; realistic hand-held phone micro-motion",
-      "duration": 5,
-      "resolution": "1080p",
-      "camera_fixed": false,
-      "negative": "morphing face, warping shirt print, garbled text, extra fingers, jitter"
+      "camera": "crash-zoom",
+      "action": "show-product",
+      "motion": "",
+      "negative": "garbled text"
     }
   ]
 }
@@ -59,6 +64,10 @@ Notes:
 - Do NOT set `aspect_ratio` — the clip inherits the frame's ratio.
 - `negative` is appended to the motion prompt as "Avoid: …" by the runner.
 - Multiple `clips` batch fine; each animates one frame.
+- `camera` / `action` reference preset ids (`presets.py list`); the runner expands
+  them into the motion prompt + params. Free-text `motion` is optional/additive.
+- A clip must supply at least one of `camera`, `action`, or `motion`.
+- Preset-derived `camera_fixed`/`duration` are overridden by explicit clip fields.
 
 ### 3. Run it
 ```bash

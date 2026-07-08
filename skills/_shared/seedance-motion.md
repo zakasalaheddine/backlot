@@ -11,6 +11,29 @@ You never call Seedance directly. `providers/video.py` wraps it; you write the
 optional `seed`, `camera_fixed`. `aspect_ratio` is ignored with an image — the
 clip inherits the frame's ratio, so 9:16 keyframes stay 9:16.
 
+## Compose from presets first
+
+Motion is now authored from a **preset library** (`presets/motion.json`, listed via
+`scripts/presets.py list`): named **camera** moves (dolly-in, crash-zoom, orbit-arc,
+handheld-follow, …) and **subject actions** (show-product, mirror-selfie-alive,
+walk-toward, …). A clip references a `camera` and/or `action` by id; the runner
+composes them. Free-text `motion` is for fine-tuning on top — not the default.
+
+Prefer a `verified` preset (tested to look good on Seedance). An `experimental`
+preset may be mushy — warn the user before using one.
+
+## Authoring a new preset
+
+When adding to `presets/motion.json`:
+- `prompt`: one clause describing the move, written as a continuation ("the camera
+  glides slowly toward the subject"; "she lifts the product toward the camera").
+- `camera_fixed`: `true` only for locked-off camera presets; omit for actions.
+- `duration`: the move's natural length (5 unless it needs 10).
+- `negative`: the specific thing this move tends to break (e.g. a crash-zoom smears
+  faces — put that here).
+- `status`: start at `experimental`; promote to `verified` only after you render it
+  on a real keyframe and confirm identity holds and the move reads cleanly.
+
 ## Motion that reads as real UGC
 
 - **Describe small, human motion, not a new scene.** "She sways slightly, hair
