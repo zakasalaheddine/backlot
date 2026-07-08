@@ -11,13 +11,13 @@ PROFILES = {
         "camera_fixed": True,          # field supported
         "aspect": "infer",             # aspect read from the image; don't send aspect_ratio
         "audio": False,                # no audio support
-        "resolutions": {"480p", "720p", "1080p"},
+        "resolutions": frozenset({"480p", "720p", "1080p"}),
     },
     "seedance-2.0": {
         "camera_fixed": False,         # not a field (sending it errors)
         "aspect": "explicit",          # MUST send aspect_ratio or it defaults to 16:9
         "audio": True,                 # generate_audio supported (backlot default off)
-        "resolutions": {"480p", "720p", "1080p", "4k"},
+        "resolutions": frozenset({"480p", "720p", "1080p", "4k"}),
     },
 }
 

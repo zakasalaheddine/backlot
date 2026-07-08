@@ -25,7 +25,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
-from providers import video  # noqa: E402
+from providers import video, config  # noqa: E402
 import presets as preset_lib  # noqa: E402
 
 
@@ -79,7 +79,7 @@ def _clip_hash(frame: Path, motion: str, negative: str, duration: int, resolutio
                seed, camera_fixed: bool, audio: bool) -> str:
     h = hashlib.sha256()
     for part in (motion, negative, str(duration), resolution, str(seed),
-                 str(camera_fixed), str(audio)):
+                 str(camera_fixed), str(audio), config.SEEDANCE_MODEL):
         h.update(part.encode())
         h.update(b"\x00")
     h.update(hashlib.sha256(frame.read_bytes()).digest())
