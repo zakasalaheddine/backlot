@@ -2,7 +2,8 @@
 """Video runner — video job JSON -> image-to-video clips + manifest.
 
 Pipeline per clip:
-  1. Validate the start-frame keyframe exists and the motion prompt is non-empty.
+  1. Validate the start-frame keyframe exists; compose motion from camera/action
+     presets + optional free-text motion (at least one is required).
   2. image_to_video() the frame into a short clip (Seedance).
   3. Content-address the clip so re-runs skip already-rendered clips.
 
@@ -32,9 +33,12 @@ def _compose(clip: dict, preset_map: dict):
     """Resolve a clip's camera/action presets + free-text motion into the final
     Seedance inputs. Returns (motion, negative, duration, resolution, seed, camera_fixed)."""
     cid = clip["id"]
-    cam = preset_lib.resolve(clip["camera"], "camera", preset_map) if clip.get("camera") else None
-    act = preset_lib.resolve(clip["action"], "action", preset_map) if clip.get("action") else None
-    free = clip.get("motion", "").strip()
+    try:
+        cam = preset_lib.resolve(clip["camera"], "camera", preset_map) if clip.get("camera") else None
+        act = preset_lib.resolve(clip["action"], "action", preset_map) if clip.get("action") else None
+    except ValueError as e:
+        raise ValueError(f"clip {cid!r}: {e}")
+    free = (clip.get("motion") or "").strip()
 
     parts = [x for x in [act["prompt"] if act else "",
                          cam["prompt"] if cam else "", free] if x]

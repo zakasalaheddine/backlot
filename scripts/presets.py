@@ -24,7 +24,15 @@ def load_presets() -> dict:
         data = json.loads(PRESETS_FILE.read_text())
     except json.JSONDecodeError as e:
         raise ValueError(f"preset library {PRESETS_FILE} is malformed JSON: {e}")
-    return {p["id"]: p for p in data}
+    presets: dict = {}
+    for p in data:
+        pid = p.get("id")
+        if not pid:
+            raise ValueError(f"preset library {PRESETS_FILE} has a record missing 'id': {p}")
+        if pid in presets:
+            raise ValueError(f"preset library {PRESETS_FILE} has duplicate id {pid!r}")
+        presets[pid] = p
+    return presets
 
 
 def resolve(preset_id: str, expected_category: str, presets: dict | None = None) -> dict:
