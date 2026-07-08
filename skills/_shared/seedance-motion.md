@@ -22,6 +22,18 @@ composes them. Free-text `motion` is for fine-tuning on top — not the default.
 Prefer a `verified` preset (tested to look good on Seedance). An `experimental`
 preset may be mushy — warn the user before using one.
 
+## Model selection & audio
+
+The Seedance model is chosen via `BACKLOT_SEEDANCE_MODEL` (env / `.env`), default
+`bytedance/seedance-1-pro`. The backend adapts per model:
+
+- **seedance-1-pro** — silent clips; aspect inferred from the keyframe.
+- **seedance-2.0** — can generate audio and needs an explicit aspect (handled for
+  you). Audio is **off by default**; opt in per clip with `"audio": true` (adds
+  synced ambient/SFX/music). **2.0 has stricter content moderation** — some
+  people/bedroom UGC scenes get flagged (error E005). If a scene is rejected, prefer
+  `seedance-1-pro` for that creative.
+
 ## Authoring a new preset
 
 When adding to `presets/motion.json`:

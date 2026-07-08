@@ -68,6 +68,9 @@ Notes:
   them into the motion prompt + params. Free-text `motion` is optional/additive.
 - A clip must supply at least one of `camera`, `action`, or `motion`.
 - Preset-derived `camera_fixed`/`duration` are overridden by explicit clip fields.
+- `audio` (optional, default false) — request generated audio. Only supported on
+  audio-capable models (e.g. seedance-2.0); requesting it on a silent model is a
+  clip-named error. The model is set via `BACKLOT_SEEDANCE_MODEL`.
 
 ### 3. Run it
 ```bash
