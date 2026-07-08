@@ -22,8 +22,52 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "scripts"))
 
 from providers import video  # noqa: E402
+import presets as preset_lib  # noqa: E402
+
+
+def _compose(clip: dict, preset_map: dict):
+    """Resolve a clip's camera/action presets + free-text motion into the final
+    Seedance inputs. Returns (motion, negative, duration, resolution, seed, camera_fixed)."""
+    cid = clip["id"]
+    cam = preset_lib.resolve(clip["camera"], "camera", preset_map) if clip.get("camera") else None
+    act = preset_lib.resolve(clip["action"], "action", preset_map) if clip.get("action") else None
+    free = clip.get("motion", "").strip()
+
+    parts = [x for x in [act["prompt"] if act else "",
+                         cam["prompt"] if cam else "", free] if x]
+    motion = ". ".join(parts)
+    if not motion:
+        raise ValueError(
+            f"clip {cid!r}: needs at least one of camera/action/motion"
+        )
+
+    negs = [x for x in [act.get("negative", "") if act else "",
+                        cam.get("negative", "") if cam else "",
+                        clip.get("negative", "")] if x]
+    negative = ", ".join(negs)
+
+    if "camera_fixed" in clip:
+        camera_fixed = bool(clip["camera_fixed"])
+    elif cam and "camera_fixed" in cam:
+        camera_fixed = bool(cam["camera_fixed"])
+    else:
+        camera_fixed = False
+
+    if "duration" in clip:
+        duration = int(clip["duration"])
+    elif cam and "duration" in cam:
+        duration = int(cam["duration"])
+    elif act and "duration" in act:
+        duration = int(act["duration"])
+    else:
+        duration = 5
+
+    resolution = clip.get("resolution", "1080p")
+    seed = clip.get("seed")
+    return motion, negative, duration, resolution, seed, camera_fixed
 
 
 def _clip_hash(frame: Path, motion: str, negative: str, duration: int, resolution: str,
@@ -49,23 +93,18 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
     meta = job.get("meta", {})
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    preset_map = preset_lib.load_presets()
     produced = []
     for clip in job["clips"]:
         cid = clip["id"]
-        motion = clip.get("motion", "").strip()
-        if not motion:
-            raise ValueError(f"clip {cid!r}: 'motion' prompt is required")
         frame = _resolve_frame(clip["frame"], job_path)
         if not frame.exists():
             raise FileNotFoundError(
                 f"clip {cid!r}: start frame not found: {clip['frame']}"
             )
 
-        duration = int(clip.get("duration", 5))
-        resolution = clip.get("resolution", "1080p")
-        camera_fixed = bool(clip.get("camera_fixed", False))
-        negative = clip.get("negative", "")
-        seed = clip.get("seed")
+        motion, negative, duration, resolution, seed, camera_fixed = _compose(
+            clip, preset_map)
 
         if resolution not in {"480p", "720p", "1080p"}:
             raise ValueError(
