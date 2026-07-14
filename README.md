@@ -14,6 +14,7 @@ See `blueprint.md` for the full design.
 ```bash
 pip install -r requirements.txt          # replicate, Pillow
 cp .env.example .env                      # then add your REPLICATE_API_TOKEN
+brew install ffmpeg                       # only needed for compose.py (video assembly)
 ```
 
 ## Try it with zero cost (no token)
@@ -39,6 +40,7 @@ scripts/         deterministic work
   assets.py        create/list/get characters & products
   run_ad.py        ad job JSON → composite → format export → text overlay (cached)
   run_video.py     video job JSON → image-to-video clips (cached, model-aware)
+  compose.py       timeline JSON → concat + audio mix + captions → master videos (ffmpeg)
   models.py        list / inspect / swap which model serves each capability
   text_overlay.py  deterministic PIL copy layer (never let the model draw text)
 providers/       swappable model-host abstraction
@@ -76,7 +78,7 @@ Skills and scripts never change.
 - `/ugc-assets` — list/inspect the library
 
 ## Not yet built
-See `docs/backlot-v2-plan.md` for the roadmap. Next up: `compose.py` (ffmpeg
-multi-clip assembly, P2), real audio backends (ElevenLabs, P3), Remotion overlays
-(P4), and the full production DAG (`run_production.py`, P5). The audio seam
-(`providers/audio.py`) already exists with a stub backend.
+See `docs/backlot-v2-plan.md` for the roadmap. Next up: real audio backends
+(ElevenLabs, P3), Remotion overlay templates (P4 — `compose.py` already accepts
+alpha overlay videos), and the full production DAG (`run_production.py`, P5).
+The audio seam (`providers/audio.py`) exists with a stub backend.

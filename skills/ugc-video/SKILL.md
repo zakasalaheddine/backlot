@@ -86,6 +86,35 @@ Show the user the `clip.mp4` outputs. Iterate the motion prompt (regenerates —
 is the expensive step, so change intentionally). Watch for identity drift or print
 warping; tighten the `negative` if you see it.
 
+### 5. Stitch into one video (optional)
+When the user wants the clips assembled into a single reel, emit a timeline job
+and run compose (needs the `ffmpeg` binary):
+
+```json
+{
+  "meta": { "aspect": "9:16", "formats": ["9:16"], "fps": 24 },
+  "clips": [
+    { "id": "c1", "src": "out/<name>/c1/clip.mp4" },
+    { "id": "c2", "src": "out/<name>/c2/clip.mp4", "trim": { "start": 0, "end": 4.5 } }
+  ],
+  "audio": {
+    "vo":    [{ "src": "vo.wav", "at": 0.3 }],
+    "music": { "src": "bed.wav", "gain_db": -6, "duck": true }
+  },
+  "captions": [{ "text": "POV: ...", "start": 0.0, "end": 2.2 }]
+}
+```
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/compose.py out/<name>/timeline.json
+```
+
+Clips are cut hard (no transitions), captions are burned deterministically with
+PIL (a model never draws text), the `audio` block is optional (omit it and clip
+audio passes through), and VO/music can be generated silent-for-now with
+`providers/audio.py` (stub) until real audio lands. Every stage is cached — a
+caption tweak re-exports masters without re-encoding or re-mixing anything.
+
 ## Testing without spending
 `BACKLOT_VIDEO_PROVIDER=stub python ${CLAUDE_PLUGIN_ROOT}/scripts/run_video.py out/<name>/job.json`
 runs the whole pipeline with a placeholder .mp4 — proves the job JSON, validation,

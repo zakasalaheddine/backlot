@@ -146,6 +146,49 @@ def render_overlay(base_path, overlay: dict, out_path, aspect: str = "1:1",
     return out_path
 
 
+def render_caption(text: str, width: int, height: int, out_path) -> Path:
+    """Render ONE video caption as a full-frame transparent PNG.
+
+    Reel-style: bold white text in a dark rounded pill, centered, sitting at
+    ~78% height so it clears both the subject and platform UI. compose.py
+    overlays these onto the video for a caption's time window — same principle
+    as the ad overlay: text is always drawn deterministically, never by a model.
+    """
+    layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+
+    font = _font(int(height * 0.032), bold=True)
+    max_w = int(width * 0.82)
+    lines = _wrap(draw, text.strip(), font, max_w)
+
+    line_gap = int(height * 0.006)
+    sizes = [draw.textbbox((0, 0), ln, font=font) for ln in lines]
+    line_hs = [bb[3] - bb[1] for bb in sizes]
+    block_h = sum(line_hs) + line_gap * (len(lines) - 1)
+    block_w = max((bb[2] - bb[0]) for bb in sizes) if lines else 0
+
+    pad_x, pad_y = int(width * 0.03), int(height * 0.012)
+    cx = width // 2
+    block_bottom = int(height * 0.80)
+    top = block_bottom - block_h - pad_y
+    draw.rounded_rectangle(
+        [cx - block_w // 2 - pad_x, top,
+         cx + block_w // 2 + pad_x, block_bottom + pad_y],
+        radius=int(height * 0.012), fill=(0, 0, 0, 170))
+
+    y = block_bottom - block_h
+    for ln, bb, lh in zip(lines, sizes, line_hs):
+        lw = bb[2] - bb[0]
+        draw.text((cx - lw / 2 - bb[0], y - bb[1]), ln, font=font,
+                  fill=(255, 255, 255, 255))
+        y += lh + line_gap
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    layer.save(out_path, "PNG")
+    return out_path
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Burn ad copy onto an image")
     p.add_argument("base")
