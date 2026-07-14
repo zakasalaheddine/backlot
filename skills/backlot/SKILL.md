@@ -1,6 +1,6 @@
 ---
 name: backlot
-description: UGC content engine — build reusable characters, static ad images, and image-to-video UGC reels from one continuity-locked asset library, using Nano-Banana for images behind a swappable provider layer. Use this as the entry point whenever the user wants to run an end-to-end UGC/ad workflow, build "a set of ads", set up a content engine or ad campaign for a brand, isn't sure which step they need, or asks what backlot can do. Routes to the right sub-skill (character-creator, ad-image, ugc-video) and enforces that ads/videos only ever reference assets that already exist.
+description: UGC content engine — build reusable characters (with locked voices), static ad images, image-to-video clips, and COMPLETE UGC video ads (shots + VO + music + captions + end card) from one continuity-locked asset library, behind a swappable model registry. Use this as the entry point whenever the user wants to run an end-to-end UGC/ad workflow, build "a set of ads", produce a video ad, set up a content engine or ad campaign for a brand, isn't sure which step they need, or asks what backlot can do. Routes to the right sub-skill (character-creator, ad-image, ugc-video, ugc-reel) and enforces that ads/videos only ever reference assets that already exist.
 ---
 
 # backlot — router
@@ -26,6 +26,7 @@ character-creator  ad-image   ugc-video
 | create a character / creator / persona / avatar / spokesperson; register a real product; evolve a character's look | **character-creator** |
 | make an ad image, product ad, static/feed/carousel creative, a set of test variants, "a set of ads" | **ad-image** |
 | make a UGC video, reel, video ad, animate an image | **ugc-video** *(animates an existing keyframe)* |
+| a COMPLETE video ad end-to-end — shots + VO + music + captions + end card | **ugc-reel** *(the full production pipeline)* |
 
 Invoke the matching sub-skill (they trigger on their own descriptions too; this
 router is for multi-step campaigns or when the user is unsure).

@@ -39,9 +39,12 @@ skills/          orchestrate (Claude is the planner; emits JSON, calls scripts)
   ugc-video/          grill → video job JSON → run_video.py
   _shared/         prompt-craft: interview, continuity, nano-banana, ad-layout, asset-library
 scripts/         deterministic work
-  assets.py        create/list/get characters & products
+  assets.py        create/list/get characters & products (+ set-voice)
   run_ad.py        ad job JSON → composite → format export → text overlay (cached)
   run_video.py     video job JSON → image-to-video clips (cached, model-aware)
+  run_production.py  production JSON → the FULL reel DAG (keyframes → clips →
+                     VO/music → overlays → masters), every stage cached
+  render_shot.py   regenerate one shot of a production, reuse everything else
   compose.py       timeline JSON → concat + audio mix + captions → master videos (ffmpeg)
   render_overlay.py  Remotion template + props → alpha overlay (.mov) or card clip (.mp4)
   audio_gen.py     VO (locked character voice, word timings) / music / SFX files
@@ -80,11 +83,13 @@ only if it's a new host). Per-capability env overrides
 Skills and scripts never change.
 
 ## Slash commands
-- `/ugc-character` — create/lock a character or product
+- `/ugc-character` — create/lock a character or product (+ voice)
 - `/ugc-ad` — build a set of ad creatives
+- `/ugc-reel` — produce a complete video ad (shots, VO, music, captions, end card)
 - `/ugc-assets` — list/inspect the library
 
 ## Not yet built
-See `docs/backlot-v2-plan.md` for the roadmap. Next up: the full production DAG
-(`run_production.py` + `/ugc-reel` — one brief → finished reel, P5) and more
-model profiles + lip-sync (P6).
+See `docs/backlot-v2-plan.md` for the roadmap. P1–P5 are done; what remains is
+P6: more model profiles (kling / wan / veo / flux as registry entries — verify
+each schema on Replicate first) and a `video.lipsync` capability for
+talking-head beats.
