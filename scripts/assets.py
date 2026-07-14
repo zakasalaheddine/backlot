@@ -16,6 +16,8 @@ CLI (run from repo root):
     python scripts/assets.py ingest-character  --name Maya --refs a.png b.png ...
     python scripts/assets.py create-product    --name "Heart Mug" \
         --descriptor "..." --constraints "..." --refs front.png angle.png
+    python scripts/assets.py set-voice --id maya-01 --voice-id <elevenlabs-id> \
+        [--voice-name Rachel] [--settings '{"stability": 0.5}']
     python scripts/assets.py list
     python scripts/assets.py get   --id maya-01
     python scripts/assets.py refs  --id maya-01     # print ref abs paths, one per line
@@ -117,6 +119,12 @@ def resolve_refs(asset_id: str) -> list[Path]:
     return [(d / r).resolve() for r in m.get("refs", [])]
 
 
+def resolve_voice(asset_id: str) -> dict | None:
+    """A character's locked voice block ({provider, voice_id, name, settings})
+    or None if no voice has been locked yet (assets.py set-voice)."""
+    return load_asset(asset_id).get("voice")
+
+
 # ---------- commands ----------
 
 def originate_character(args) -> None:
@@ -193,6 +201,32 @@ def create_product(args) -> None:
     print(json.dumps({"id": prod_id, "dir": str(prod_dir), "refs": rels}, indent=2))
 
 
+def set_voice(args) -> None:
+    """Lock a voice onto a character — same continuity trick as the face refs:
+    picked once, then every VO take sounds like the same person."""
+    char_dir = CHARACTERS / args.id
+    if not char_dir.exists():
+        if _find_asset(args.id):
+            print(f"{args.id!r} is a product — only characters have voices",
+                  file=sys.stderr)
+        else:
+            print(f"No character with id {args.id!r}", file=sys.stderr)
+        sys.exit(1)
+    manifest = _load_manifest(char_dir)
+    voice = {
+        "provider": args.provider,
+        "voice_id": args.voice_id,
+        "name": args.voice_name or "",
+    }
+    if args.settings:
+        voice["settings"] = json.loads(args.settings)
+    manifest["voice"] = voice
+    manifest["version"] = int(manifest.get("version", 1)) + 1
+    _write_manifest(char_dir / "character.json", manifest)
+    print(json.dumps({"id": args.id, "voice": voice,
+                      "version": manifest["version"]}, indent=2))
+
+
 def list_assets(args) -> None:
     def rows(base: Path, kind: str):
         out = []
@@ -267,6 +301,15 @@ def main() -> None:
     cp.add_argument("--constraints", default="")
     cp.add_argument("--refs", nargs="+", required=True)
     cp.set_defaults(func=create_product)
+
+    sv = sub.add_parser("set-voice", help="lock a voice onto a character")
+    sv.add_argument("--id", required=True)
+    sv.add_argument("--voice-id", required=True, help="provider voice id")
+    sv.add_argument("--voice-name", default="", help="human-readable voice name")
+    sv.add_argument("--provider", default="elevenlabs")
+    sv.add_argument("--settings", default="",
+                    help='optional JSON, e.g. {"stability": 0.5, "similarity_boost": 0.75}')
+    sv.set_defaults(func=set_voice)
 
     ls = sub.add_parser("list", help="list all assets")
     ls.set_defaults(func=list_assets)

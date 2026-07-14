@@ -70,10 +70,24 @@ angles before they consider it locked. If they want changes:
 - when a locked character is edited later (new wardrobe/season), **bump `version`**
   in the manifest — she should stay the same person in a new outfit, not a lookalike.
 
-### 4. Confirm it's summonable
-Report the id back plainly: "Locked as `maya-01` (4 refs)." That id is how ad-image
-and ugc-video will summon her. Never let an ad silently invent a throwaway identity —
-if an asset is missing, create it here first.
+### 4. Lock a voice (characters that will speak)
+If the character will do voice-over in videos, lock a voice now — it's the audio
+half of continuity, the same trick as the face refs. Needs `ELEVENLABS_API_KEY`:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/voices.py list --search "warm" --category premade
+python ${CLAUDE_PLUGIN_ROOT}/scripts/assets.py set-voice --id maya-01 \
+  --voice-id <voice_id> --voice-name Rachel
+```
+
+Share a couple of `preview_url`s so the user can audition before locking. Skip
+for products and for characters that only appear in silent clips — the voice can
+be locked later when the first VO is needed.
+
+### 5. Confirm it's summonable
+Report the id back plainly: "Locked as `maya-01` (4 refs, voice: Rachel)." That id
+is how ad-image and ugc-video will summon her. Never let an ad silently invent a
+throwaway identity — if an asset is missing, create it here first.
 
 ## Testing without spending
 Prefix any command with `BACKLOT_IMAGE_PROVIDER=stub` to run the full flow with

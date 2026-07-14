@@ -13,7 +13,7 @@ See `blueprint.md` for the full design.
 ## Setup
 ```bash
 pip install -r requirements.txt          # replicate, Pillow
-cp .env.example .env                      # then add your REPLICATE_API_TOKEN
+cp .env.example .env                      # REPLICATE_API_TOKEN + ELEVENLABS_API_KEY
 brew install ffmpeg                       # only needed for compose.py (video assembly)
 ```
 
@@ -41,6 +41,8 @@ scripts/         deterministic work
   run_ad.py        ad job JSON → composite → format export → text overlay (cached)
   run_video.py     video job JSON → image-to-video clips (cached, model-aware)
   compose.py       timeline JSON → concat + audio mix + captions → master videos (ffmpeg)
+  audio_gen.py     VO (locked character voice, word timings) / music / SFX files
+  voices.py        browse ElevenLabs voices to lock onto a character
   models.py        list / inspect / swap which model serves each capability
   text_overlay.py  deterministic PIL copy layer (never let the model draw text)
 providers/       swappable model-host abstraction
@@ -48,7 +50,7 @@ providers/       swappable model-host abstraction
   config.py        env + registry resolver (resolve("video.i2v") → model/backend/profile)
   images.py        generate_reference(), composite()
   video.py         image_to_video(), capabilities()
-  audio.py         tts(), music(), sfx()   (stub backend for now; ElevenLabs is P3)
+  audio.py         tts() [+ word-timing sidecar], music(), sfx()  (ElevenLabs)
 assets/          the persisted library (contents gitignored)
 ```
 
@@ -78,7 +80,7 @@ Skills and scripts never change.
 - `/ugc-assets` — list/inspect the library
 
 ## Not yet built
-See `docs/backlot-v2-plan.md` for the roadmap. Next up: real audio backends
-(ElevenLabs, P3), Remotion overlay templates (P4 — `compose.py` already accepts
-alpha overlay videos), and the full production DAG (`run_production.py`, P5).
-The audio seam (`providers/audio.py`) exists with a stub backend.
+See `docs/backlot-v2-plan.md` for the roadmap. Next up: Remotion overlay
+templates (P4 — `compose.py` already accepts alpha overlay videos, and TTS
+already emits the word timings karaoke captions need), the full production DAG
+(`run_production.py` + `/ugc-reel`, P5), and more model profiles (P6).

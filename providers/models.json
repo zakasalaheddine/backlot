@@ -4,9 +4,9 @@
     "image.reference": "nano-banana",
     "image.composite": "nano-banana",
     "video.i2v": "seedance-1-pro",
-    "audio.tts": "stub-audio",
-    "audio.music": "stub-audio",
-    "audio.sfx": "stub-audio"
+    "audio.tts": "eleven-tts",
+    "audio.music": "eleven-music",
+    "audio.sfx": "eleven-sfx"
   },
   "models": {
     "nano-banana": {
@@ -45,6 +45,40 @@
         "resolutions": ["480p", "720p", "1080p", "4k"],
         "durations": [5, 10],
         "notes": "stricter content moderation than 1-pro; audio is opt-in per clip"
+      }
+    },
+    "eleven-tts": {
+      "capabilities": ["audio.tts"],
+      "backend": "elevenlabs_audio",
+      "slug": "eleven_multilingual_v2",
+      "match": ["eleven_multilingual", "eleven_turbo", "eleven_flash", "eleven_v3"],
+      "profile": {
+        "formats": ["mp3"],
+        "timestamps": true,
+        "default_voice": "21m00Tcm4TlvDq8ikWAM",
+        "notes": "default_voice is ElevenLabs premade 'Rachel'; characters lock their own via assets.py set-voice"
+      }
+    },
+    "eleven-music": {
+      "capabilities": ["audio.music"],
+      "backend": "elevenlabs_audio",
+      "slug": "music_v1",
+      "match": ["music_v"],
+      "profile": {
+        "formats": ["mp3"],
+        "duration_s": [3, 600],
+        "instrumental": true,
+        "notes": "instrumental=true forces vocal-free beds (VO sits on top); flip per-job later if a track wants vocals"
+      }
+    },
+    "eleven-sfx": {
+      "capabilities": ["audio.sfx"],
+      "backend": "elevenlabs_audio",
+      "slug": "eleven_text_to_sound_v2",
+      "match": ["text_to_sound"],
+      "profile": {
+        "formats": ["mp3"],
+        "duration_s": [0.5, 30]
       }
     },
     "stub-audio": {

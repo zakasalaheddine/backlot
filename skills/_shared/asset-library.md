@@ -31,9 +31,19 @@ hand-write these files.
   "refs": ["refs/ref_00.png", "refs/ref_01.png", "refs/ref_02.png", "refs/ref_03.png"],
   "seed_prompt": "prompt used to originate her",
   "created_from": "generate | upload",
+  "voice": {
+    "provider": "elevenlabs",
+    "voice_id": "21m00Tcm4TlvDq8ikWAM",
+    "name": "Rachel",
+    "settings": { "stability": 0.5, "similarity_boost": 0.75 }
+  },
   "version": 1
 }
 ```
+
+`voice` is optional until locked (`assets.py set-voice`) — but once a character
+speaks in any video, lock it: the voice is as much her identity as the face refs.
+Every VO take then uses it via `audio_gen.py tts --character maya-01`.
 
 ## product.json
 ```json

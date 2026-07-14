@@ -60,6 +60,7 @@ _LEGACY_PROVIDER_ENV = {"image": "BACKLOT_IMAGE_PROVIDER",
 _STUB_BACKENDS = {"image": "stub_images", "video": "stub_video", "audio": "stub_audio"}
 
 REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN", "").strip()
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
 
 
 def capabilities() -> list[str]:
@@ -156,6 +157,16 @@ def load_backend(resolved: dict):
             f"(capability {resolved['capability']!r}; check "
             f"{env_var(resolved['capability'], 'PROVIDER')} or the registry)"
         ) from e
+
+
+def require_elevenlabs_token() -> str:
+    if not ELEVENLABS_API_KEY:
+        raise RuntimeError(
+            "ELEVENLABS_API_KEY is not set. Add it to the plugin .env, or run with "
+            "BACKLOT_AUDIO_TTS_PROVIDER=stub (music/sfx likewise) to test without "
+            "spending."
+        )
+    return ELEVENLABS_API_KEY
 
 
 def require_replicate_token() -> str:

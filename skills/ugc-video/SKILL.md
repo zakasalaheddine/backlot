@@ -109,11 +109,24 @@ and run compose (needs the `ffmpeg` binary):
 python ${CLAUDE_PLUGIN_ROOT}/scripts/compose.py out/<name>/timeline.json
 ```
 
+Generate the VO and music first (ElevenLabs; needs `ELEVENLABS_API_KEY`):
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/audio_gen.py tts "the VO line" --character maya-01
+python ${CLAUDE_PLUGIN_ROOT}/scripts/audio_gen.py music "cozy-upbeat lofi, warm" --duration 15
+```
+
+VO uses the character's **locked voice** (`assets.py set-voice` — route to
+character-creator if none is locked). Use the paths audio_gen prints (the
+backend picks the container). tts also writes a `<stem>.timing.json` word-timing
+sidecar — use it to time captions to the VO instead of guessing.
+
 Clips are cut hard (no transitions), captions are burned deterministically with
-PIL (a model never draws text), the `audio` block is optional (omit it and clip
-audio passes through), and VO/music can be generated silent-for-now with
-`providers/audio.py` (stub) until real audio lands. Every stage is cached — a
-caption tweak re-exports masters without re-encoding or re-mixing anything.
+PIL (a model never draws text), and the `audio` block is optional (omit it and
+clip audio passes through). Every stage is cached — a caption tweak re-exports
+masters without re-encoding or re-mixing anything. Zero-cost test: prefix with
+`BACKLOT_AUDIO_TTS_PROVIDER=stub BACKLOT_AUDIO_MUSIC_PROVIDER=stub` for silent
+placeholder audio with the same timing sidecar.
 
 ## Testing without spending
 `BACKLOT_VIDEO_PROVIDER=stub python ${CLAUDE_PLUGIN_ROOT}/scripts/run_video.py out/<name>/job.json`
