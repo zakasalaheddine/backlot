@@ -1,7 +1,8 @@
 """Replicate video backend — Seedance (bytedance/seedance-1-pro, seedance-2.0).
 
 Each model version accepts a different input schema; the fields to send are
-resolved from that model's capability profile (see seedance_profiles.py):
+resolved from that model's capability profile (providers/models.json, passed in
+by the dispatcher):
 
     prompt        required   -> motion description (+ "Avoid: <negative>." appended)
     image         start frame (uploaded from a local file)
@@ -21,9 +22,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .. import config
 from .replicate_common import run_video
-from .seedance_profiles import profile_for, nearest_aspect
+
+# Supported aspect ratios we map a frame to (subset of Seedance's enum).
+_ASPECTS = {"9:16": 9 / 16, "3:4": 3 / 4, "1:1": 1.0, "4:3": 4 / 3, "16:9": 16 / 9}
+
+
+def nearest_aspect(w: int, h: int) -> str:
+    """Map a frame's pixel dimensions to the closest supported aspect ratio."""
+    ratio = w / h
+    return min(_ASPECTS, key=lambda k: abs(_ASPECTS[k] - ratio))
 
 
 def _build_input(profile: dict, prompt: str, negative: str, duration: int,
@@ -52,13 +60,12 @@ def _frame_aspect(frame: Path) -> str:
 
 def image_to_video(frame: Path, prompt: str, negative: str, duration: int,
                    resolution: str, seed, camera_fixed: bool, audio: bool,
-                   out_path: Path) -> Path:
-    """Animate one start frame into a clip via the configured Seedance model,
-    sending only the fields that model's profile supports."""
-    profile = profile_for(config.SEEDANCE_MODEL)
+                   out_path: Path, *, model: str, profile: dict) -> Path:
+    """Animate one start frame into a clip via `model`, sending only the fields
+    that model's profile supports."""
     aspect = _frame_aspect(frame) if profile["aspect"] == "explicit" else None
     inp = _build_input(profile, prompt, negative, duration, resolution, seed,
                        camera_fixed, audio, aspect)
     with open(frame, "rb") as fh:
         inp["image"] = fh
-        return run_video(config.SEEDANCE_MODEL, inp, out_path)
+        return run_video(model, inp, out_path)

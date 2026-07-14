@@ -1,27 +1,14 @@
-"""Public video API. Callers use ONLY these functions; the backend is chosen
-from env (config.VIDEO_PROVIDER). To add a host, drop a module in backends/
-with the same image_to_video() signature and register it in _backend().
+"""Public video API. Callers use ONLY these functions; the model + backend are
+resolved from the registry (providers/models.json) with env overrides — see
+config.resolve("video.i2v"). Mirrors images.py.
 
-v1: image-to-video from a locked keyframe via Seedance. Mirrors images.py.
+v1: image-to-video from a locked keyframe.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
 from . import config
-
-
-def _backend():
-    name = config.VIDEO_PROVIDER
-    if name == "replicate":
-        from .backends import replicate_video as b
-    elif name == "stub":
-        from .backends import stub_video as b
-    else:
-        raise ValueError(
-            f"Unknown BACKLOT_VIDEO_PROVIDER={name!r}. Known: replicate, stub."
-        )
-    return b
 
 
 def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
@@ -35,7 +22,8 @@ def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
              "audio": bool (optional, default False)}.
     Returns the saved .mp4 path.
     """
-    b = _backend()
+    res = config.resolve("video.i2v")
+    b = config.load_backend(res)
     return b.image_to_video(
         Path(frame),
         motion["prompt"],
@@ -46,11 +34,15 @@ def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
         motion.get("camera_fixed", False),
         motion.get("audio", False),
         Path(out_path),
+        model=res["slug"], profile=res["profile"],
     )
 
 
 def capabilities() -> dict:
-    """Capability profile of the active Seedance model (from BACKLOT_SEEDANCE_MODEL).
-    Lets callers introspect supported resolutions / audio without backend details."""
-    from .backends.seedance_profiles import profile_for
-    return profile_for(config.SEEDANCE_MODEL)
+    """Capability profile of the active video model, plus which model it is:
+    the profile fields (resolutions, audio, durations, ...) merged with
+    {"model": slug, "key": registry key, "backend": module}. Lets runners
+    validate jobs and key caches without knowing backend details."""
+    res = config.resolve("video.i2v")
+    return {**res["profile"], "model": res["slug"], "key": res["key"],
+            "backend": res["backend"]}

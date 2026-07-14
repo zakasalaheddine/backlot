@@ -1,0 +1,61 @@
+{
+  "_comment": "Capability registry — the single source of which model serves each capability. `capabilities` maps a capability to its default model key. Each model entry: backend (module in providers/backends/), slug (host model id), match (substrings that map a raw env slug to this entry, so pinned '<slug>:<hash>' still resolves), capabilities it can serve, and its capability profile (what the model supports — runners validate against this, backends use it to build the input schema). Adding a model = one entry here (+ a backend module only if it lives on a new host). Override per capability with BACKLOT_<CAPABILITY>_MODEL / _PROVIDER env vars (dots become underscores).",
+  "capabilities": {
+    "image.reference": "nano-banana",
+    "image.composite": "nano-banana",
+    "video.i2v": "seedance-1-pro",
+    "audio.tts": "stub-audio",
+    "audio.music": "stub-audio",
+    "audio.sfx": "stub-audio"
+  },
+  "models": {
+    "nano-banana": {
+      "capabilities": ["image.reference", "image.composite"],
+      "backend": "replicate_images",
+      "slug": "google/nano-banana",
+      "match": ["nano-banana"],
+      "profile": {
+        "aspects": ["match_input_image", "1:1", "2:3", "3:2", "3:4", "4:3",
+                    "4:5", "5:4", "9:16", "16:9", "21:9"],
+        "multi_ref": true
+      }
+    },
+    "seedance-1-pro": {
+      "capabilities": ["video.i2v"],
+      "backend": "replicate_video",
+      "slug": "bytedance/seedance-1-pro",
+      "match": ["seedance-1"],
+      "profile": {
+        "camera_fixed": true,
+        "aspect": "infer",
+        "audio": false,
+        "resolutions": ["480p", "720p", "1080p"],
+        "durations": [5, 10]
+      }
+    },
+    "seedance-2.0": {
+      "capabilities": ["video.i2v"],
+      "backend": "replicate_video",
+      "slug": "bytedance/seedance-2.0",
+      "match": ["seedance-2"],
+      "profile": {
+        "camera_fixed": false,
+        "aspect": "explicit",
+        "audio": true,
+        "resolutions": ["480p", "720p", "1080p", "4k"],
+        "durations": [5, 10],
+        "notes": "stricter content moderation than 1-pro; audio is opt-in per clip"
+      }
+    },
+    "stub-audio": {
+      "capabilities": ["audio.tts", "audio.music", "audio.sfx"],
+      "backend": "stub_audio",
+      "slug": "",
+      "match": [],
+      "profile": {
+        "formats": ["wav"],
+        "notes": "placeholder silence — real audio backends (ElevenLabs) arrive in P3"
+      }
+    }
+  }
+}

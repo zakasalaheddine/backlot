@@ -37,10 +37,11 @@ def _canvas(text: str, aspect: str, out_path: Path) -> Path:
 
 
 def generate_reference(prompt: str, angle: str, aspect: str, out_path: Path,
-                       ref_imgs=None) -> Path:
+                       ref_imgs=None, *, model=None, profile=None) -> Path:
     return _canvas(f"REF {angle}: {prompt}", aspect, out_path)
 
 
-def composite(prompt: str, negative: str, ref_imgs, aspect: str, out_path: Path) -> Path:
+def composite(prompt: str, negative: str, ref_imgs, aspect: str, out_path: Path,
+              *, model=None, profile=None) -> Path:
     refs = ", ".join(Path(p).name for p in (ref_imgs or []))
     return _canvas(f"COMPOSITE (refs: {refs})\n{prompt}", aspect, out_path)

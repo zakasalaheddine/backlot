@@ -25,7 +25,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
-from providers import video, config  # noqa: E402
+from providers import video  # noqa: E402
 import presets as preset_lib  # noqa: E402
 
 
@@ -76,10 +76,10 @@ def _compose(clip: dict, preset_map: dict):
 
 
 def _clip_hash(frame: Path, motion: str, negative: str, duration: int, resolution: str,
-               seed, camera_fixed: bool, audio: bool) -> str:
+               seed, camera_fixed: bool, audio: bool, model: str) -> str:
     h = hashlib.sha256()
     for part in (motion, negative, str(duration), resolution, str(seed),
-                 str(camera_fixed), str(audio), config.SEEDANCE_MODEL):
+                 str(camera_fixed), str(audio), model):
         h.update(part.encode())
         h.update(b"\x00")
     h.update(hashlib.sha256(frame.read_bytes()).digest())
@@ -118,8 +118,12 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
                 f"clip {cid!r}: resolution {resolution!r} not supported by the active "
                 f"model; choose one of {sorted(caps['resolutions'])}"
             )
-        if duration not in {5, 10}:
-            raise ValueError(f"clip {cid!r}: duration must be 5 or 10, got {duration!r}")
+        durations = set(caps.get("durations", [5, 10]))
+        if duration not in durations:
+            raise ValueError(
+                f"clip {cid!r}: duration must be one of {sorted(durations)}, "
+                f"got {duration!r}"
+            )
         if audio and not caps["audio"]:
             raise ValueError(
                 f"clip {cid!r}: audio requested but the active model has no audio support"
@@ -131,7 +135,7 @@ def run(job_path: Path, out_dir: Path, force: bool) -> dict:
         hash_path = cdir / "clip.hash"
 
         want = _clip_hash(frame, motion, negative, duration, resolution, seed,
-                          camera_fixed, audio)
+                          camera_fixed, audio, caps["model"])
         have = hash_path.read_text().strip() if hash_path.exists() else ""
 
         if force or not clip_path.exists() or have != want:

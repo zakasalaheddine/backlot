@@ -70,7 +70,8 @@ Notes:
 - Preset-derived `camera_fixed`/`duration` are overridden by explicit clip fields.
 - `audio` (optional, default false) — request generated audio. Only supported on
   audio-capable models (e.g. seedance-2.0); requesting it on a silent model is a
-  clip-named error. The model is set via `BACKLOT_SEEDANCE_MODEL`.
+  clip-named error. Check / swap the active model with
+  `python ${CLAUDE_PLUGIN_ROOT}/scripts/models.py list` (`set video.i2v <model>`).
 
 ### 3. Run it
 ```bash

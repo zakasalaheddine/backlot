@@ -1,25 +1,13 @@
-"""Public image API. Callers use ONLY these functions; the backend is chosen
-from env (config.IMAGE_PROVIDER). To add a host, drop a module in backends/
-with the same two functions and register it in _BACKENDS.
+"""Public image API. Callers use ONLY these functions; the model + backend for
+each capability are resolved from the registry (providers/models.json) with env
+overrides — see config.resolve(). Reference origination and compositing are
+separate capabilities, so each can point at a different model.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
 from . import config
-
-
-def _backend():
-    name = config.IMAGE_PROVIDER
-    if name == "replicate":
-        from .backends import replicate_images as b
-    elif name == "stub":
-        from .backends import stub_images as b
-    else:
-        raise ValueError(
-            f"Unknown BACKLOT_IMAGE_PROVIDER={name!r}. Known: replicate, stub."
-        )
-    return b
 
 
 def generate_reference(prompt: str, angles, aspect: str = "4:5",
@@ -39,7 +27,8 @@ def generate_reference(prompt: str, angles, aspect: str = "4:5",
     ref_imgs: optional seed images (e.g. real uploaded photos) used on angle 0.
     Returns the list of saved PNG paths, in angle order.
     """
-    b = _backend()
+    res = config.resolve("image.reference")
+    b = config.load_backend(res)
     out_dir = Path(out_dir)
     paths: list[Path] = []
     for i, angle in enumerate(angles):
@@ -50,7 +39,8 @@ def generate_reference(prompt: str, angles, aspect: str = "4:5",
             seed_refs = [paths[0]] + list(ref_imgs or [])
         else:
             seed_refs = ref_imgs
-        paths.append(b.generate_reference(prompt, angle, aspect, out_path, seed_refs))
+        paths.append(b.generate_reference(prompt, angle, aspect, out_path, seed_refs,
+                                          model=res["slug"], profile=res["profile"]))
     return paths
 
 
@@ -62,7 +52,9 @@ def composite(spec: dict, ref_imgs, aspect: str = "4:5",
     ref_imgs: list of local reference image paths (character + product refs).
     Returns the saved PNG path.
     """
-    b = _backend()
+    res = config.resolve("image.composite")
+    b = config.load_backend(res)
     return b.composite(
-        spec["prompt"], spec.get("negative", ""), ref_imgs, aspect, Path(out_path)
+        spec["prompt"], spec.get("negative", ""), ref_imgs, aspect, Path(out_path),
+        model=res["slug"], profile=res["profile"],
     )

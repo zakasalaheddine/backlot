@@ -24,8 +24,11 @@ preset may be mushy — warn the user before using one.
 
 ## Model selection & audio
 
-The Seedance model is chosen via `BACKLOT_SEEDANCE_MODEL` (env / `.env`), default
-`bytedance/seedance-1-pro`. The backend adapts per model:
+The video model comes from the capability registry (`providers/models.json`),
+default `bytedance/seedance-1-pro`. Inspect / swap with
+`python ${CLAUDE_PLUGIN_ROOT}/scripts/models.py list|set video.i2v <model>`
+(the legacy `BACKLOT_SEEDANCE_MODEL` env var still works). The backend adapts
+per model:
 
 - **seedance-1-pro** — silent clips; aspect inferred from the keyframe.
 - **seedance-2.0** — can generate audio and needs an explicit aspect (handled for
