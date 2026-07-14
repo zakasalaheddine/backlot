@@ -312,7 +312,10 @@ def export_master(concat: Path, concat_hash: str, mix: Path | None,
         if p.suffix.lower() == ".webm":
             cmd += ["-c:v", "libvpx-vp9"]
         cmd += ["-i", str(p)]
-        filters.append(f"{vlabel}[{idx}:v]overlay=0:0:eof_action=pass:"
+        # Scale the overlay to the master frame so a mismatched render size
+        # doesn't silently mis-place its content (alpha is preserved).
+        filters.append(f"[{idx}:v]scale={fw}:{fh}[ov{idx}]")
+        filters.append(f"{vlabel}[ov{idx}]overlay=0:0:eof_action=pass:"
                        f"enable='gte(t,{at:.3f})'[v{idx}]")
         vlabel = f"[v{idx}]"
         idx += 1

@@ -1,0 +1,18 @@
+{
+  "name": "backlot-overlays",
+  "private": true,
+  "description": "Remotion overlay templates for backlot — rendered via scripts/render_overlay.py, composited by compose.py. Node is optional for the plugin: without it, compose.py's PIL captions still work.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}

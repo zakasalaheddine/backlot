@@ -15,6 +15,8 @@ See `blueprint.md` for the full design.
 pip install -r requirements.txt          # replicate, Pillow
 cp .env.example .env                      # REPLICATE_API_TOKEN + ELEVENLABS_API_KEY
 brew install ffmpeg                       # only needed for compose.py (video assembly)
+# Node >= 18 (optional): Remotion overlays — karaoke captions, end cards.
+# Without Node, compose.py's built-in PIL captions still work.
 ```
 
 ## Try it with zero cost (no token)
@@ -41,6 +43,7 @@ scripts/         deterministic work
   run_ad.py        ad job JSON → composite → format export → text overlay (cached)
   run_video.py     video job JSON → image-to-video clips (cached, model-aware)
   compose.py       timeline JSON → concat + audio mix + captions → master videos (ffmpeg)
+  render_overlay.py  Remotion template + props → alpha overlay (.mov) or card clip (.mp4)
   audio_gen.py     VO (locked character voice, word timings) / music / SFX files
   voices.py        browse ElevenLabs voices to lock onto a character
   models.py        list / inspect / swap which model serves each capability
@@ -51,6 +54,8 @@ providers/       swappable model-host abstraction
   images.py        generate_reference(), composite()
   video.py         image_to_video(), capabilities()
   audio.py         tts() [+ word-timing sidecar], music(), sfx()  (ElevenLabs)
+remotion/        motion-graphics templates (Node >= 18, optional)
+  src/             KaraokeCaptions, HookCard, ProgressBar (alpha overlays), EndCard (clip)
 assets/          the persisted library (contents gitignored)
 ```
 
@@ -80,7 +85,6 @@ Skills and scripts never change.
 - `/ugc-assets` — list/inspect the library
 
 ## Not yet built
-See `docs/backlot-v2-plan.md` for the roadmap. Next up: Remotion overlay
-templates (P4 — `compose.py` already accepts alpha overlay videos, and TTS
-already emits the word timings karaoke captions need), the full production DAG
-(`run_production.py` + `/ugc-reel`, P5), and more model profiles (P6).
+See `docs/backlot-v2-plan.md` for the roadmap. Next up: the full production DAG
+(`run_production.py` + `/ugc-reel` — one brief → finished reel, P5) and more
+model profiles + lip-sync (P6).

@@ -128,6 +128,11 @@ masters without re-encoding or re-mixing anything. Zero-cost test: prefix with
 `BACKLOT_AUDIO_TTS_PROVIDER=stub BACKLOT_AUDIO_MUSIC_PROVIDER=stub` for silent
 placeholder audio with the same timing sidecar.
 
+For the polished version — word-timed karaoke captions synced to the VO, a hook
+card, a progress bar, a branded CTA end card — read
+`${CLAUDE_PLUGIN_ROOT}/skills/_shared/overlay-design.md` (Remotion templates via
+`render_overlay.py`; needs Node, otherwise stick with the PIL captions above).
+
 ## Testing without spending
 `BACKLOT_VIDEO_PROVIDER=stub python ${CLAUDE_PLUGIN_ROOT}/scripts/run_video.py out/<name>/job.json`
 runs the whole pipeline with a placeholder .mp4 — proves the job JSON, validation,

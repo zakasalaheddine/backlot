@@ -16,3 +16,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Node (remotion overlay workspace)
+remotion/node_modules/
+remotion/package-lock.json
