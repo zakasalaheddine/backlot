@@ -12,11 +12,16 @@ from .. import config
 
 
 def _client():
+    import httpx
     import replicate  # imported lazily so `stub` mode needs no dependency
 
     config.require_replicate_token()
-    # replicate reads REPLICATE_API_TOKEN from env automatically.
-    return replicate
+    # Long read timeout: video predictions block for minutes; the default
+    # client times out mid-render (httpx.ReadTimeout) on 1080p clips.
+    return replicate.Client(
+        api_token=config.REPLICATE_API_TOKEN,
+        timeout=httpx.Timeout(900.0, connect=15.0),
+    )
 
 
 def _save_output(output, out_path: Path) -> Path:

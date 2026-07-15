@@ -69,3 +69,13 @@ def image_to_video(frame: Path, prompt: str, negative: str, duration: int,
     with open(frame, "rb") as fh:
         inp["image"] = fh
         return run_video(model, inp, out_path)
+
+
+def lipsync(video: Path, audio_track: Path, out_path: Path, *, model: str,
+            profile: dict) -> Path:
+    """Re-sync a clip's mouth to a VO track (sync/lipsync-2 schema:
+    {video, audio, temperature})."""
+    with open(video, "rb") as vf, open(audio_track, "rb") as af:
+        inp = {"video": vf, "audio": af,
+               "temperature": profile.get("temperature", 0.5)}
+        return run_video(model, inp, out_path)

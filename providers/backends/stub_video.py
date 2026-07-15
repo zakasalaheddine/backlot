@@ -38,3 +38,19 @@ def image_to_video(frame: Path, prompt: str, negative: str, duration: int,
             return out_path
     out_path.write_bytes(_PLACEHOLDER_MP4)
     return out_path
+
+
+def lipsync(video: Path, audio_track: Path, out_path: Path, *, model=None,
+            profile=None) -> Path:
+    """Animatic-grade stub: mux the VO onto the clip without moving the mouth."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    if shutil.which("ffmpeg"):
+        proc = subprocess.run(
+            ["ffmpeg", "-y", "-i", str(video), "-i", str(audio_track),
+             "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy",
+             "-c:a", "aac", "-shortest", str(out_path)],
+            capture_output=True, text=True)
+        if proc.returncode == 0:
+            return out_path
+    shutil.copyfile(video, out_path)
+    return out_path

@@ -4,6 +4,7 @@
     "image.reference": "nano-banana",
     "image.composite": "nano-banana",
     "video.i2v": "seedance-1-pro",
+    "video.lipsync": "lipsync-2",
     "audio.tts": "eleven-tts",
     "audio.music": "eleven-music",
     "audio.sfx": "eleven-sfx"
@@ -45,6 +46,17 @@
         "resolutions": ["480p", "720p", "1080p", "4k"],
         "durations": [5, 10],
         "notes": "stricter content moderation than 1-pro; audio is opt-in per clip"
+      }
+    },
+    "lipsync-2": {
+      "capabilities": ["video.lipsync"],
+      "backend": "replicate_video",
+      "slug": "sync/lipsync-2",
+      "match": ["lipsync"],
+      "profile": {
+        "audio_format": "wav",
+        "temperature": 0.5,
+        "notes": "schema verified 2026-07: {video: .mp4, audio: .wav, sync_mode=loop, temperature, active_speaker} -> mp4 URI. Re-syncs an existing clip's mouth to a VO track — the talking-head path (Seedance 2.0 dialogue is moderation-blocked for people)."
       }
     },
     "eleven-tts": {

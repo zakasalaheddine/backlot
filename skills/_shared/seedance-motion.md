@@ -33,9 +33,12 @@ per model:
 - **seedance-1-pro** — silent clips; aspect inferred from the keyframe.
 - **seedance-2.0** — can generate audio and needs an explicit aspect (handled for
   you). Audio is **off by default**; opt in per clip with `"audio": true` (adds
-  synced ambient/SFX/music). **2.0 has stricter content moderation** — some
-  people/bedroom UGC scenes get flagged (error E005). If a scene is rejected, prefer
-  `seedance-1-pro` for that creative.
+  synced ambient/SFX; quoted dialogue in the motion prompt can produce lip-synced
+  speech). **2.0's moderation rejects photoreal PEOPLE in image-to-video**
+  (error E005) — verified 2026-07: every frame with a human creator was flagged,
+  including a plain character ref, while people-free product/b-roll scenes pass.
+  In practice: 2.0 + audio is for b-roll and product scenes only; for character
+  clips use `seedance-1-pro` (silent) with ElevenLabs VO on top.
 
 ## Authoring a new preset
 

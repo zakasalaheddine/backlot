@@ -38,6 +38,17 @@ def image_to_video(frame: str | Path, motion: dict, duration: int = 5,
     )
 
 
+def lipsync(video: str | Path, audio_track: str | Path,
+            out_path: str | Path = "out/lipsync.mp4") -> Path:
+    """Re-sync a clip's mouth movements to a voice-over track — the
+    talking-head path. video: an existing character clip; audio_track: the VO
+    (.wav preferred). Returns the saved .mp4 path."""
+    res = config.resolve("video.lipsync")
+    b = config.load_backend(res)
+    return b.lipsync(Path(video), Path(audio_track), Path(out_path),
+                     model=res["slug"], profile=res["profile"])
+
+
 def capabilities() -> dict:
     """Capability profile of the active video model, plus which model it is:
     the profile fields (resolutions, audio, durations, ...) merged with

@@ -11,6 +11,10 @@ Takes the clips run_video.py produced and assembles a publishable video:
   4. Burn captions: each caption is a deterministic PIL transparent PNG
      (text_overlay.render_caption — a model never draws text) overlaid for its
      time window. Alpha overlay videos (Remotion, P4) composite the same way.
+     KNOWN BUG: combining PIL `captions` AND `overlays` in one timeline
+     deadlocks ffmpeg (looped-PNG inputs + .mov overlay inputs starve the
+     filter graph; observed 2026-07, 0% CPU stall). Until fixed, use one or
+     the other — Remotion KaraokeCaptions overlays cover the caption need.
   5. Export a master per requested format (9:16 native; others center-cropped).
 
 Every stage is content-addressed (hash of inputs + params) so re-runs skip
