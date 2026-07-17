@@ -42,15 +42,71 @@ ASSETS_DIR = Path(os.environ.get("BACKLOT_ASSETS_DIR", "").strip() or (REPO / "a
 CHARACTERS = ASSETS_DIR / "characters"
 PRODUCTS = ASSETS_DIR / "products"
 
-DEFAULT_ANGLES = [
-    "front, eye-level, neutral friendly expression, plain background",
-    "3/4 left, eye-level, plain background",
-    "profile left, eye-level, plain background",
-    "full body, standing, plain background",
-]
+# The character sheet is the FIRST and only thing origination produces: one
+# composite image (turnaround + head/expression grid on plain white, no text
+# panels, no wardrobe/accessory/cinematic panels). Individual clean pose refs are
+# generated later, on demand, from the sheet — see `add-pose`.
+SHEET_ASPECT = "3:2"
+
+DEFAULT_EXPRESSIONS = ["neutral", "happy", "sad", "angry", "surprised", "determined", "thoughtful"]
+
+# Characters are PHOTOREAL by default — a real person, not an illustration. Pass
+# --style "illustrated"/"anime"/etc only when the user explicitly asks for art.
+PHOTOREAL_STYLE = (
+    "Photorealistic — a real photograph of a real person, natural skin texture "
+    "with pores and fine detail, realistic lighting, shot on a DSLR, sharp focus. "
+    "This is a PHOTO, not an illustration, not a drawing, not a painting, not "
+    "anime, not a cartoon, not a 3D render."
+)
+PHOTOREAL_NEGATIVE = ("illustration, drawing, painting, sketch, anime, cartoon, "
+                      "comic, cgi, 3d render, digital art, painterly, stylized")
+
+SHEET_TEMPLATE = (
+    "{style}\n\n"
+    "A single clean CHARACTER REFERENCE SHEET on a plain white background. "
+    "No text, no labels, no color swatches, no wardrobe or accessory cut-outs, "
+    "no cinematic scene, no props. One consistent person in every view, "
+    "uniform even studio lighting, sharp detail.\n\n"
+    "TOP ROW: a full-body turnaround of the SAME person — front view, side "
+    "profile, and back view, neutral standing pose.\n"
+    "BELOW: a grid of head-and-shoulders shots of the SAME person from multiple "
+    "angles (front, 3/4 left, 3/4 right, profile left, profile right, tilted up, "
+    "tilted down), cycling through a range of EXPRESSIONS: {expressions}.\n"
+    "Plus one larger clean head-and-shoulders hero portrait.\n\n"
+    "The person: {identity}"
+)
 
 
 # ---------- helpers ----------
+
+def _style_clause(style: str) -> str:
+    return PHOTOREAL_STYLE if style == "photoreal" else f"Art style: {style}."
+
+
+def _merge_negative(negative: str, style: str) -> str:
+    """Add anti-illustration terms for photoreal; leave art styles untouched."""
+    if style != "photoreal":
+        return negative
+    return f"{negative}, {PHOTOREAL_NEGATIVE}".strip(", ") if negative else PHOTOREAL_NEGATIVE
+
+def _expression_names(sheet: dict | None) -> list[str]:
+    """Expression labels for the sheet grid. Reads sheet.character.expressions
+    (list of names or {name, ...} dicts); falls back to a sensible default set."""
+    exprs = ((sheet or {}).get("character", {}) or {}).get("expressions", [])
+    names = [e.get("name", "") if isinstance(e, dict) else str(e) for e in exprs]
+    names = [n for n in names if n]
+    return names or DEFAULT_EXPRESSIONS
+
+
+def _sheet_prompt(sheet: dict | None, descriptor: str, style: str) -> str:
+    base = ((sheet or {}).get("prompt_config", {}) or {}).get("base_prompt", "") or descriptor
+    return SHEET_TEMPLATE.format(
+        style=_style_clause(style),
+        expressions=", ".join(_expression_names(sheet)), identity=base)
+
+
+def _prompt_cfg(sheet: dict | None) -> dict:
+    return (sheet or {}).get("prompt_config", {}) or {}
 
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "asset"
@@ -84,6 +140,13 @@ def _find_asset(asset_id: str) -> Path | None:
         if d.exists():
             return d
     return None
+
+
+def _parse_sheet(raw: str | None) -> dict | None:
+    """Parse the optional --sheet JSON blob (the structured character sheet).
+    Stored verbatim; assets.py stays schema-blind so the sheet can evolve in the
+    skill without touching Python."""
+    return json.loads(raw) if raw else None
 
 
 def _copy_refs(src_paths, dst_dir: Path) -> list[str]:
@@ -128,20 +191,25 @@ def resolve_voice(asset_id: str) -> dict | None:
 # ---------- commands ----------
 
 def originate_character(args) -> None:
-    """Generate a multi-angle ref set from one seed prompt, then lock it."""
+    """Generate the CHARACTER SHEET (one composite image) and lock it. Individual
+    pose refs are NOT generated here — add them later with `add-pose`."""
     from providers import images
 
     char_id = _next_id(CHARACTERS, args.name, args.id)
     char_dir = CHARACTERS / char_id
-    refs_dir = char_dir / "refs"
-    angles = json.loads(args.angles) if args.angles else DEFAULT_ANGLES
+    char_dir.mkdir(parents=True, exist_ok=True)
 
-    seed = args.seed_prompt or args.descriptor
-    seed_refs = list(args.seed_refs) if args.seed_refs else None
-    paths = images.generate_reference(
-        seed, angles, aspect=args.aspect, out_dir=refs_dir, ref_imgs=seed_refs
+    sheet = _parse_sheet(args.sheet)
+    cfg = _prompt_cfg(sheet)
+    base_prompt = cfg.get("base_prompt", "") or args.descriptor
+    negative = _merge_negative(cfg.get("negative_prompt", "") or args.negative or "", args.style)
+    seed_refs = list(args.seed_refs) if args.seed_refs else []
+
+    sheet_path = char_dir / "character_sheet.png"
+    images.composite(
+        {"prompt": _sheet_prompt(sheet, args.descriptor, args.style), "negative": negative},
+        seed_refs, aspect=args.aspect, out_path=sheet_path,
     )
-    rels = [f"refs/{p.name}" for p in paths]
 
     manifest = {
         "id": char_id,
@@ -152,13 +220,60 @@ def originate_character(args) -> None:
             "wardrobe_default": args.wardrobe or "",
             "negative": args.negative or "",
         },
-        "refs": rels,
-        "seed_prompt": seed,
+        "style": args.style,
+        "sheet_image": "character_sheet.png",
+        "refs": [],  # poses are deferred — see `add-pose`
+        "seed_prompt": base_prompt,
         "created_from": "generate",
         "version": 1,
     }
+    if sheet is not None:
+        manifest["sheet"] = sheet
     _write_manifest(char_dir / "character.json", manifest)
-    print(json.dumps({"id": char_id, "dir": str(char_dir), "refs": rels}, indent=2))
+    print(json.dumps({"id": char_id, "dir": str(char_dir),
+                      "sheet_image": "character_sheet.png", "refs": []}, indent=2))
+
+
+def add_pose(args) -> None:
+    """Generate ONE clean pose ref for an existing character, seeded from its
+    sheet (or an earlier pose) so it stays the same person. This is how a
+    compositing-ready ref comes into being — only when an ad/video needs it."""
+    from providers import images
+
+    d = _find_asset(args.id)
+    if not d or not (d / "character.json").exists():
+        print(f"No character with id {args.id!r}", file=sys.stderr)
+        sys.exit(1)
+    m = _load_manifest(d)
+    refs_dir = d / "refs"
+    refs_dir.mkdir(exist_ok=True)
+
+    # Identity anchor: an existing pose ref if any, else the character sheet.
+    anchor = None
+    if m.get("refs"):
+        anchor = (d / m["refs"][0]).resolve()
+    elif m.get("sheet_image"):
+        anchor = (d / m["sheet_image"]).resolve()
+
+    cfg = _prompt_cfg(m.get("sheet"))
+    style = m.get("style", "photoreal")
+    base = cfg.get("base_prompt", "") or m["appearance"]["descriptor"]
+    negative = _merge_negative(
+        cfg.get("negative_prompt", "") or m["appearance"].get("negative", ""), style)
+    prompt = (f"{_style_clause(style)}\n\n{base}\n\nSingle clean shot of this exact "
+              f"same person — one figure only, no sheet, no grid, plain neutral "
+              f"background.\nPose / framing: {args.pose}.")
+
+    n = len(m.get("refs", []))
+    out = refs_dir / f"pose_{n:02d}.png"
+    images.composite({"prompt": prompt, "negative": negative},
+                     [anchor] if anchor else [], aspect=args.aspect, out_path=out)
+
+    rel = f"refs/{out.name}"
+    m.setdefault("refs", []).append(rel)
+    m["version"] = int(m.get("version", 1)) + 1
+    _write_manifest(d / "character.json", m)
+    print(json.dumps({"id": args.id, "pose": rel, "refs": m["refs"]}, indent=2))
 
 
 def ingest_character(args) -> None:
@@ -166,6 +281,7 @@ def ingest_character(args) -> None:
     char_id = _next_id(CHARACTERS, args.name, args.id)
     char_dir = CHARACTERS / char_id
     rels = _copy_refs(args.refs, char_dir / "refs")
+    sheet = _parse_sheet(args.sheet)
     manifest = {
         "id": char_id,
         "name": args.name,
@@ -180,6 +296,8 @@ def ingest_character(args) -> None:
         "created_from": "upload",
         "version": 1,
     }
+    if sheet is not None:
+        manifest["sheet"] = sheet
     _write_manifest(char_dir / "character.json", manifest)
     print(json.dumps({"id": char_id, "dir": str(char_dir), "refs": rels}, indent=2))
 
@@ -279,15 +397,28 @@ def main() -> None:
                         help="canonical text injected into every future prompt")
         sp.add_argument("--wardrobe", default="")
         sp.add_argument("--negative", default="")
+        sp.add_argument("--sheet", default="",
+                        help="structured character sheet as JSON (stored verbatim; "
+                             "its prompt_config.base_prompt drives origination)")
 
-    o = sub.add_parser("originate-character", help="generate a ref set from a seed")
+    o = sub.add_parser("originate-character",
+                       help="generate the character SHEET (poses come later)")
     add_common_char(o)
-    o.add_argument("--seed-prompt", default="")
-    o.add_argument("--angles", default="", help="JSON list; default 4-angle turnaround")
-    o.add_argument("--aspect", default="4:5")
+    o.add_argument("--aspect", default=SHEET_ASPECT, help="sheet aspect (landscape)")
+    o.add_argument("--style", default="photoreal",
+                   help="'photoreal' (default, a real person) or an art style like "
+                        "'illustrated', 'anime', '3d pixar' — only when asked")
     o.add_argument("--seed-refs", nargs="*", default=None,
-                   help="optional images to seed identity on angle 0")
+                   help="optional images to seed identity (e.g. real photos)")
     o.set_defaults(func=originate_character)
+
+    ap = sub.add_parser("add-pose",
+                        help="generate one clean pose ref from a character's sheet")
+    ap.add_argument("--id", required=True)
+    ap.add_argument("--pose", required=True,
+                    help="framing/pose, e.g. 'front, standing, arms relaxed'")
+    ap.add_argument("--aspect", default="4:5")
+    ap.set_defaults(func=add_pose)
 
     ic = sub.add_parser("ingest-character", help="lock a character from real photos")
     add_common_char(ic)

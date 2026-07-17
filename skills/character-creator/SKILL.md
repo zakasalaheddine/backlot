@@ -26,30 +26,91 @@ any constraints (e.g. "printed text must stay legible"). Don't over-grill — st
 you can picture them. Then reflect the brief back and get a yes.
 
 From the confirmed brief, compose two things in-context (you are the planner):
-- a **canonical descriptor** — the fixed text injected into every future prompt
-  ("mid-20s woman, warm smile, soft makeup, cream knit sweater, gold hoops").
-- a **seed prompt** — a photographic origination prompt for the front angle.
+- a **character sheet** — the full structured identity spec (see below). Fill
+  every field by *inference* from the light brief plus coherent choices; do NOT
+  turn it into a 25-question questionnaire. If the brief says "girl-next-door,
+  mid-20s", you already know the jawline is soft and the makeup is minimal —
+  decide it. Reflect the finished sheet back and get a yes.
+- a **canonical descriptor** — a short one-line summary of the sheet, injected as
+  `--descriptor` ("mid-20s woman, warm smile, cream knit sweater, gold hoops").
 
-### 2. Originate (or ingest)
+The sheet's `prompt_config.base_prompt` is the identity prompt; assets.py wraps it
+in a fixed reference-sheet layout to produce the sheet image, so a locked sheet
+keeps the same look.
 
-**Generated character** — build a multi-angle turnaround (front, 3/4, profile, full
-body) from one seed. Angle 0 is generated first and chained into the rest so it's one
-person from four angles (see `continuity.md`):
+**Photoreal by default.** Characters are real people — write `base_prompt`
+photographically ("a real mid-20s woman…, natural skin texture, soft natural
+light"), NOT "illustration/painterly/cinematic render". assets.py forces photoreal
+and negatives out illustration automatically. Only when the user explicitly asks
+for art (cartoon, anime, 3D, illustrated) pass `--style "anime"` (etc) to
+`originate-character` — that switches the render medium and drops the anti-art
+negatives.
+
+### The character sheet
+Compose this JSON and pass it verbatim via `--sheet`. It's the source of truth
+for the identity; assets.py stores it as-is (schema-blind). Shape:
+```json
+{
+  "character": {
+    "name": "", "archetype": "",
+    "identity": { "age_range": "", "gender_presentation": "", "ethnicity": "", "skin_tone": "" },
+    "face": {
+      "shape": "", "jawline": "", "cheekbones": "",
+      "eyes": { "color": "", "shape": "", "spacing": "", "brows": "" },
+      "nose": "", "lips": "", "distinct_markers": []
+    },
+    "hair": { "color": "", "undertone": "", "length": "", "texture": "", "part": "", "default_style": "" },
+    "body": { "build": "", "height": "", "notable_features": [] },
+    "expressions": [ { "name": "", "description": "" } ],
+    "wardrobe": { "default_outfit": "", "variants": [], "color_palette": [] }
+  },
+  "prompt_config": {
+    "base_prompt": "", "negative_prompt": "", "seed": null, "model": "", "style_tags": []
+  }
+}
+```
+`expressions` drives the emotion grid on the sheet — list ~6-8 emotions with a
+short facial cue each (falls back to a default set if omitted). Keep the sheet a
+plausible, internally-consistent person; that consistency is the whole point.
+
+### 2. Generate the character SHEET (poses come later)
+
+The sheet is the **first and only** thing you generate: ONE composite image — a
+full-body turnaround (front / side / back) + a head-and-shoulders grid cycling
+through the `expressions`, plus a hero portrait, on plain white. No text panels,
+no wardrobe/accessory cut-outs, no cinematic scene. Individual clean pose refs are
+NOT made here — you add them later, only when an ad/video needs one (step 2b).
+
+**Generated character:**
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/scripts/assets.py originate-character \
   --name "Maya" \
   --persona "mid-20s, warm, girl-next-door, casual-chic" \
   --descriptor "mid-20s woman, warm smile, soft makeup, cream knit sweater, gold hoops" \
-  --seed-prompt "photo of a mid-20s woman, girl-next-door, soft natural window light, plain background" \
   --wardrobe "oversized cream knit, gold hoops" \
-  --negative "no heavy makeup, no tattoos, no sunglasses"
+  --negative "no heavy makeup, no tattoos, no sunglasses" \
+  --sheet "$SHEET_JSON"
 ```
+Writes `character_sheet.png` + the manifest, with `refs: []`. Pass
+`--seed-refs a.png b.png` to anchor the identity on existing images (real photos,
+or a prior version's face).
 
-**Real person (upload)** — lock provided photos instead of generating:
+**Real person (upload)** — lock provided photos instead of generating a sheet:
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/scripts/assets.py ingest-character --name "Maya" \
-  --descriptor "..." --refs /path/a.png /path/b.png /path/c.png
+  --descriptor "..." --refs /path/a.png /path/b.png /path/c.png \
+  --sheet "$SHEET_JSON"   # compose the sheet by reading the uploaded photos
 ```
+For an upload the photos ARE the refs — fill the sheet by describing what you see.
+
+### 2b. Add poses on demand (only when needed)
+When an ad or video actually needs a compositing-ready ref, generate one clean
+pose from the sheet (it seeds the identity off the sheet, so it stays her):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/assets.py add-pose --id maya-01 \
+  --pose "front, standing, arms relaxed, plain background"
+```
+Each call appends a `refs/pose_NN.png`. Don't pre-generate poses you don't need.
 
 **Product** — always real photos:
 ```bash
@@ -63,12 +124,11 @@ The command prints the assigned **id** and the saved ref paths. It writes the
 manifest and locks the refs under `assets/`.
 
 ### 3. Review loop
-Show the user the ref sheet (the generated angles). Let them reject/regen individual
-angles before they consider it locked. If they want changes:
-- regenerate a single angle by re-running origination with an adjusted `--angles`
-  JSON, or tweak the descriptor and re-originate.
-- when a locked character is edited later (new wardrobe/season), **bump `version`**
-  in the manifest — she should stay the same person in a new outfit, not a lookalike.
+Show the user `character_sheet.png`. If they want changes, tweak the sheet JSON
+(expressions, face, wardrobe) and re-run `originate-character` — pass `--id <same>`
+to overwrite, and `--seed-refs <old character_sheet.png>` to keep her the same
+person while adjusting. When a locked character is edited later (new wardrobe/
+season), **bump `version`** — same person, new look, not a lookalike.
 
 ### 4. Lock a voice (characters that will speak)
 If the character will do voice-over in videos, lock a voice now — it's the audio
@@ -85,9 +145,11 @@ for products and for characters that only appear in silent clips — the voice c
 be locked later when the first VO is needed.
 
 ### 5. Confirm it's summonable
-Report the id back plainly: "Locked as `maya-01` (4 refs, voice: Rachel)." That id
-is how ad-image and ugc-video will summon her. Never let an ad silently invent a
-throwaway identity — if an asset is missing, create it here first.
+Report the id back plainly: "Locked as `maya-01` (sheet ready, voice: Rachel)."
+That id is how ad-image and ugc-video summon her. They composite from `refs` —
+which start empty, so the first ad/video adds the poses it needs via `add-pose`
+(or you pre-add them here). Never let an ad silently invent a throwaway identity —
+if an asset is missing, create it here first.
 
 ## Testing without spending
 Prefix any command with `BACKLOT_IMAGE_PROVIDER=stub` to run the full flow with
