@@ -1,0 +1,24 @@
+{
+  "name": "backlot",
+  "version": "0.3.0",
+  "description": "UGC content engine — reusable characters with locked voices, ad images, and complete UGC video ads (shots, VO, music, karaoke captions, end cards), all from one continuity-locked asset library behind a swappable model registry. Claude for planning and copy.",
+  "author": {
+    "name": "Salah Eddine Zaka",
+    "email": "zakasalaheddine@gmail.com"
+  },
+  "homepage": "https://github.com/zakasalaheddine/backlot",
+  "repository": "https://github.com/zakasalaheddine/backlot",
+  "license": "MIT",
+  "keywords": [
+    "ugc",
+    "ads",
+    "video",
+    "content-engine",
+    "creative",
+    "character",
+    "image-generation",
+    "replicate",
+    "elevenlabs",
+    "marketing"
+  ]
+}

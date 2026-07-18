@@ -10,13 +10,32 @@ images**, and (v1) **UGC videos** from one continuity-locked asset library.
 
 See `blueprint.md` for the full design.
 
-## Setup
+## Install (Claude Code plugin)
+```
+/plugin marketplace add zakasalaheddine/backlot
+/plugin install backlot@backlot
+```
+Then, once — the plugin ships scripts, so install their runtime deps and supply API keys:
+```bash
+pip install replicate Pillow             # image/video runners (ffmpeg for video assembly: brew install ffmpeg)
+export REPLICATE_API_TOKEN=r8_...        # nano-banana / seedance
+export ELEVENLABS_API_KEY=sk_...         # VO + music (only for video/audio)
+```
+Exported env vars are read by every `/ugc-*` command. Prefer not to export? Drop a
+`.env` (see `.env.example`) into the installed plugin dir
+`~/.claude/plugins/cache/backlot/backlot/<version>/` instead — exported vars still win.
+
+New to it? Start with `/backlot` (the router) or run `character-creator` first — ads and
+videos only ever reference assets that already exist.
+
+## Setup (from a clone / for development)
 ```bash
 pip install -r requirements.txt          # replicate, Pillow
 cp .env.example .env                      # REPLICATE_API_TOKEN + ELEVENLABS_API_KEY
 brew install ffmpeg                       # only needed for compose.py (video assembly)
 # Node >= 18 (optional): Remotion overlays — karaoke captions, end cards.
 # Without Node, compose.py's built-in PIL captions still work.
+# After editing skills/ or scripts/, push into the installed cache: ./sync-plugin.sh
 ```
 
 ## Try it with zero cost (no token)

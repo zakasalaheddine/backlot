@@ -1,0 +1,18 @@
+{
+  "name": "backlot",
+  "owner": {
+    "name": "Salah Eddine Zaka",
+    "email": "zakasalaheddine@gmail.com",
+    "url": "https://github.com/zakasalaheddine"
+  },
+  "metadata": {
+    "description": "UGC content engine for Claude Code — continuity-locked characters, ad images, and full UGC video ads."
+  },
+  "plugins": [
+    {
+      "name": "backlot",
+      "source": "./",
+      "description": "UGC content engine — reusable characters with locked voices, ad images, and complete UGC video ads (shots, VO, music, karaoke captions, end cards) from one continuity-locked asset library behind a swappable model registry."
+    }
+  ]
+}

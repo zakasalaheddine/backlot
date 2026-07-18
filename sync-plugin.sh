@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEST="$HOME/.claude/plugins/cache/backlot-dev/backlot/0.1.0"
+DEST="$HOME/.claude/plugins/cache/backlot/backlot/0.3.0"
 
 [ -d "$DEST" ] || { echo "plugin cache not found: $DEST (is backlot installed?)"; exit 1; }
 
